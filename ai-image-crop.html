@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Image Crop - Crop images to specific aspect ratios. Free AI-powered image cropping tool.">
+    <title>AI Image Crop - Crop Images | AIVOROPRO</title>
+    <link rel="icon" type="image/png" href="https://flexible-jade-j2fhsqcxkf.edgeone.app/icon.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <div class="container my-5">
+        <div class="tool-container">
+            <h1 class="mb-4">AI Image Crop</h1>
+            <p class="lead text-muted">Crop images to specific aspect ratios intelligently.</p>
+            <div class="upload-area" id="uploadArea">
+                <i class="bi bi-image display-1 text-primary mb-3"></i>
+                <h4>Drag & Drop your image here</h4>
+                <p class="text-muted">or</p>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                <button class="btn btn-primary btn-lg" onclick="document.getElementById('fileInput').click()">Choose File</button>
+            </div>
+            <div id="previewSection" style="display: none;" class="mt-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3"><h5>Original Image</h5><img id="preview" class="img-fluid rounded shadow" alt="Preview"></div>
+                    <div class="col-md-6 mb-3"><h5>Cropped Image</h5><div id="resultContainer"><p class="text-muted">Click "Crop Image" to process</p></div></div>
+                </div>
+                <div class="mt-3">
+                    <label class="form-label">Aspect Ratio:</label>
+                    <select class="form-select" id="aspectRatio">
+                        <option value="1:1">1:1 (Square)</option>
+                        <option value="3:4">3:4 (Portrait)</option>
+                        <option value="4:3">4:3 (Landscape)</option>
+                        <option value="16:9" selected>16:9 (Widescreen)</option>
+                        <option value="9:16">9:16 (Vertical/Stories)</option>
+                        <option value="21:9">21:9 (Ultrawide)</option>
+                        <option value="5:4">5:4 (Classic)</option>
+                        <option value="custom">Custom Ratio</option>
+                    </select>
+                    <div id="customRatio" style="display: none;" class="mt-2">
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label small">Width:</label>
+                                <input type="number" class="form-control form-control-sm" id="customWidth" placeholder="16" value="16">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Height:</label>
+                                <input type="number" class="form-control form-control-sm" id="customHeight" placeholder="9" value="9">
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted">Select the aspect ratio for cropping</small>
+                </div>
+                <button class="btn btn-primary btn-lg mt-3" id="processBtn">Crop Image</button>
+                <a href="#" id="downloadBtn" class="btn btn-success btn-lg mt-3 ms-2" style="display: none;">Download</a>
+            </div>
+        </div>
+    </div>
+    <div id="footer-placeholder"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+        let currentFile = null;
+        
+        document.getElementById('fileInput').addEventListener('change', function(e) { handleFile(e.target.files[0]); });
+        setupDragAndDrop('uploadArea', 'preview', function(file) { handleFile(file); });
+        
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) { alert('Please select a valid image file.'); return; }
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewImg = document.getElementById('preview');
+                previewImg.src = e.target.result;
+                document.getElementById('previewSection').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        document.getElementById('aspectRatio').addEventListener('change', function() {
+            if (this.value === 'custom') {
+                document.getElementById('customRatio').style.display = 'block';
+            } else {
+                document.getElementById('customRatio').style.display = 'none';
+            }
+        });
+        
+        function getAspectRatio() {
+            const aspectRatio = document.getElementById('aspectRatio').value;
+            if (aspectRatio === 'custom') {
+                const width = parseFloat(document.getElementById('customWidth').value) || 16;
+                const height = parseFloat(document.getElementById('customHeight').value) || 9;
+                return { width: width, height: height, text: width + ':' + height };
+            } else {
+                const parts = aspectRatio.split(':');
+                return { width: parseFloat(parts[0]), height: parseFloat(parts[1]), text: aspectRatio };
+            }
+        }
+        
+        function calculateCropDimensions(imgWidth, imgHeight, targetRatio) {
+            const imgAspect = imgWidth / imgHeight;
+            const targetAspect = targetRatio.width / targetRatio.height;
+            
+            let cropWidth, cropHeight, cropX, cropY;
+            
+            if (imgAspect > targetAspect) {
+                // Image is wider than target - crop width
+                cropHeight = imgHeight;
+                cropWidth = cropHeight * targetAspect;
+                cropX = (imgWidth - cropWidth) / 2;
+                cropY = 0;
+            } else {
+                // Image is taller than target - crop height
+                cropWidth = imgWidth;
+                cropHeight = cropWidth / targetAspect;
+                cropX = 0;
+                cropY = (imgHeight - cropHeight) / 2;
+            }
+            
+            return { cropX, cropY, cropWidth, cropHeight };
+        }
+        
+        document.getElementById('processBtn').addEventListener('click', function() {
+            if (!currentFile) return;
+            const btn = this; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+            
+            const ratio = getAspectRatio();
+            const img = document.getElementById('preview');
+            if (!img.complete || img.naturalWidth === 0) {
+                alert('Please wait for the image to load completely.');
+                btn.disabled = false;
+                btn.innerHTML = 'Crop Image';
+                return;
+            }
+            const crop = calculateCropDimensions(img.naturalWidth, img.naturalHeight, ratio);
+            
+            setTimeout(() => {
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(crop.cropWidth);
+                canvas.height = Math.round(crop.cropHeight);
+                const ctx = canvas.getContext('2d');
+                
+                ctx.drawImage(
+                    img,
+                    Math.round(crop.cropX), Math.round(crop.cropY),
+                    Math.round(crop.cropWidth), Math.round(crop.cropHeight),
+                    0, 0, canvas.width, canvas.height
+                );
+                
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const fileSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+                    const fileSizeKB = (blob.size / 1024).toFixed(2);
+                    const sizeText = fileSizeMB >= 1 ? fileSizeMB + ' MB' : fileSizeKB + ' KB';
+                    
+                    document.getElementById('resultContainer').innerHTML = 
+                        `<img src="${url}" class="img-fluid rounded shadow" alt="Cropped">` +
+                        `<p class="text-success mt-2 text-center"><i class="bi bi-check-circle"></i> Cropped to ${ratio.text} aspect ratio</p>` +
+                        `<p class="text-info mt-1 text-center small"><strong>Dimensions:</strong> ${canvas.width} × ${canvas.height} px | <strong>Size:</strong> ${sizeText}</p>`;
+                    
+                    document.getElementById('downloadBtn').href = url;
+                    document.getElementById('downloadBtn').download = 'cropped_' + canvas.width + 'x' + canvas.height + '_' + ratio.text.replace(':', 'x') + '_' + currentFile.name;
+                    document.getElementById('downloadBtn').style.display = 'inline-block';
+                    btn.disabled = false; btn.innerHTML = 'Crop Image';
+                }, 'image/png');
+            }, 1500);
+        });
+    </script>
+</body>
+</html>
+

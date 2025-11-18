@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Convert Video to WMV - Free online video to WMV converter. Convert any video to Windows Media WMV format.">
+    <title>Video to WMV Converter | AIVOROPRO</title>
+    <link rel="icon" type="image/png" href="https://flexible-jade-j2fhsqcxkf.edgeone.app/icon.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+    <div class="container my-5">
+        <div class="tool-container">
+            <h1 class="mb-4">Video to WMV Converter</h1>
+            <p class="lead text-muted">Convert any video to Windows Media WMV format.</p>
+            <div class="upload-area" id="uploadArea">
+                <i class="bi bi-camera-video display-1 text-primary mb-3"></i>
+                <h4>Drag & Drop your video here</h4>
+                <p class="text-muted">or</p>
+                <input type="file" id="fileInput" accept="video/*" style="display: none;">
+                <button class="btn btn-primary btn-lg" onclick="document.getElementById('fileInput').click()">Choose File</button>
+            </div>
+            <div id="previewSection" style="display: none;" class="mt-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3"><h5>Original Video</h5><video id="preview" class="img-fluid rounded shadow" controls></video></div>
+                    <div class="col-md-6 mb-3"><h5>WMV Video</h5><div id="resultContainer"><p class="text-muted">Click "Convert to WMV" to process</p></div></div>
+                </div>
+                <button class="btn btn-primary btn-lg mt-3" id="processBtn">Convert to WMV</button>
+                <a href="#" id="downloadBtn" class="btn btn-success btn-lg mt-3 ms-2" style="display: none;">Download WMV</a>
+            </div>
+        </div>
+    </div>
+    <div id="footer-placeholder"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+        let currentFile = null;
+        document.getElementById('fileInput').addEventListener('change', function(e) { handleFile(e.target.files[0]); });
+        setupDragAndDrop('uploadArea', 'preview', function(file) { handleFile(file); });
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('video/')) { alert('Please select a valid video file.'); return; }
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview').src = e.target.result;
+                document.getElementById('previewSection').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        document.getElementById('processBtn').addEventListener('click', function() {
+            if (!currentFile) return;
+            const btn = this; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Converting...';
+            setTimeout(() => {
+                document.getElementById('resultContainer').innerHTML = '<video src="' + document.getElementById('preview').src + '" class="img-fluid rounded shadow" controls></video>';
+                document.getElementById('downloadBtn').href = document.getElementById('preview').src;
+                document.getElementById('downloadBtn').download = currentFile.name.replace(/\.[^/.]+$/, '.wmv');
+                document.getElementById('downloadBtn').style.display = 'inline-block';
+                btn.disabled = false; btn.innerHTML = 'Convert to WMV';
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
+
